@@ -1,4 +1,4 @@
-module mtpsync
+module adbgo
 
 go 1.20
 
