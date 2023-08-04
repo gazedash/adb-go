@@ -77,6 +77,7 @@ func pull() {
 }
 
 func main() {
+	// flags are easier than args, it just works (c)
 	modePtr := flag.String("mode", "", "a string")
 
 	flag.Parse()
