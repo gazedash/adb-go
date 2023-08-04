@@ -18,7 +18,9 @@ Why not just manually copy through MTP?
 So my target workflow is:
 
 Plug in the device, run this tool, PROFIT
+
 Plug any other device, run this tool, PROFIT
+
 Pulled files are grouped by device id
 
 ```
