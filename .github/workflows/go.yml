@@ -25,6 +25,6 @@ jobs:
     - name: Upload Release
       uses: ncipollo/release-action@v1.12.0
       with:
-        tag: testing
+        tag: ${{ env.GITHUB_REF_NAME }}
         artifacts: "release.zip"
         token: ${{secrets.PAT}}
