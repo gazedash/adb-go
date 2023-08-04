@@ -24,13 +24,13 @@ jobs:
       run: zip release *
     - name: Debug ncipollo/release-action
       env: 
-        XXX: ${{ env.GITHUB_REF_NAME }}
+        XXX: ${{ github.ref_name }}
       run: |
         echo $GITHUB_REF_NAME
         echo $XXX
     - name: Upload Release
       uses: ncipollo/release-action@v1.12.0
       with:
-        tag: ${{ env.GITHUB_REF_NAME }}
+        tag: ${{ github.ref_name }}
         artifacts: "release.zip"
         token: ${{secrets.PAT}}
