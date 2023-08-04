@@ -20,6 +20,8 @@ jobs:
 
     - name: Build
       run: GOOS=windows GOARCH=amd64 go build
+    - name: Zip
+      run: zip release .
     - name: Upload Release
       uses: ncipollo/release-action@v1.12.0
       with:
