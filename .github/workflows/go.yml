@@ -22,12 +22,6 @@ jobs:
       run: GOOS=windows GOARCH=amd64 go build
     - name: Zip
       run: zip release *
-    - name: Debug ncipollo/release-action
-      env: 
-        XXX: ${{ github.ref_name }}
-      run: |
-        echo $GITHUB_REF_NAME
-        echo $XXX
     - name: Upload Release
       uses: ncipollo/release-action@v1.12.0
       with:
