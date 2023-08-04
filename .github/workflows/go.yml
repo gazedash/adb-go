@@ -1,7 +1,8 @@
 name: Go
 
-on: 
+on:
   push:
+    branches: [ master ]
     tags:
     - '*'
 
