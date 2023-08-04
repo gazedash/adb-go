@@ -27,9 +27,12 @@ go run main.go -mode pull
 
 TODO:
 
-[ ] Ability to pass .pullignore from cmd OR
-[ ] Implement per-device .pullignore based on device id
-[ ] Implement push
-[ ] Think about automatic sync when device is plugged in
+- [ ] Ability to pass .pullignore from cmd OR
+
+- [ ] Implement per-device .pullignore based on device id
+
+- [ ] Implement push
+
+- [ ] Think about automatic sync when device is plugged in
 
 PROFIT
