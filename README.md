@@ -31,7 +31,9 @@ Make sure to tweak config and .pullignore for your needs!
 Click run_me OR
 Open terminal, navigate to the folder, and
 
+```
 adbgo.exe -mode pull
+```
 
 ### Running (other OS)
 
