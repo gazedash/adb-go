@@ -23,9 +23,34 @@ Plug any other device, run this tool, PROFIT
 
 Pulled files are grouped by device id
 
+### Running (Windows)
+
+Download latest release, unzip
+Make sure to tweak config and .pullignore for your needs!
+
+Click run_me OR
+Open terminal, navigate to the folder, and
+
+adbgo.exe -mode pull
+
+### Running (other OS)
+
 ```
 go run main.go -mode pull
 ```
+
+### Building from source
+
+If a binary is more convenient for you, you can build it yourself:
+
+```
+# Build Linux x64
+GOOS=linux GOARCH=amd64 go build -o adbgo_linux_x64
+# Build MacOS ARM
+GOOS=darwin GOARCH=arm64 go build -o adbgo_darwin_arm64
+```
+
+Note: this is not tested.
 
 TODO:
 

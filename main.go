@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
@@ -10,17 +11,31 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// NormalizeNewlines normalizes \r\n (windows) and \r (mac)
+// into \n (unix)
+func NormalizeNewlines(d []byte) []byte {
+	// replace CR LF \r\n (windows) with LF \n (unix)
+	d = bytes.Replace(d, []byte{13, 10}, []byte{10}, -1)
+	// replace CF \r (mac) with LF \n (unix)
+	d = bytes.Replace(d, []byte{13}, []byte{10}, -1)
+
+	return d
+}
+
+var newline = "\n"
+
 func pull() {
 	// Dirs to be ignored when pulling
 	pullignoreData, _ := os.ReadFile(".pullignore")
-	pullignore := strings.Split(string(pullignoreData), "\r\n")
+	pullignore := strings.Split(string(NormalizeNewlines(pullignoreData)), newline)
 	configData, _ := os.ReadFile("config")
-	config := strings.Split(string(configData), "\r\n")
+	config := strings.Split(string(NormalizeNewlines(configData)), newline)
 	dst := ""
 
 	// Get seial number, as reported by adb devices
 	cmd := exec.Command("adb", "shell", "getprop", "ro.serialno")
-	device_id, _ := cmd.Output()
+	device_id_data, _ := cmd.Output()
+	device_id := strings.ReplaceAll(string(NormalizeNewlines(device_id_data)), newline, "")
 
 	for _, v := range config {
 		option := strings.Split(v, "=")
@@ -29,7 +44,7 @@ func pull() {
 
 		// handle config options
 		if key == "DST" {
-			dst = value + "\\" + string(device_id)
+			dst = value + string(os.PathSeparator) + device_id
 		}
 	}
 
@@ -37,7 +52,7 @@ func pull() {
 
 	stdout, _ := ls.Output()
 
-	folders := strings.Split(string(stdout), "\r\n")
+	folders := strings.Split(string(NormalizeNewlines(stdout)), newline)
 
 	// exclude ignored folders
 	foldersToPull := make([]string, len(folders))
@@ -53,10 +68,16 @@ func pull() {
 	fmt.Println(dst)
 	fmt.Println(".....................")
 
-	// cmd cuz os.MkdirAll is too stupid (maybe it's only a Windows problem)
-	cmd = exec.Command("cmd", "/c", "mkdir", dst)
-
-	_, _ = cmd.Output()
+	// easy way to guesstimate the env we're running on, cuz
+	// it can be: Windows, linux, Git Bash, WSL (run from .exe), WSL (run from "elf" linux binary)
+	if strings.Contains(string(stdout), "\r\n") {
+		// cmd cuz os.MkdirAll is too stupid (maybe it's only a Windows problem?)
+		cmd = exec.Command("cmd", "/c", "mkdir", dst)
+		_, _ = cmd.Output()
+	} else {
+		cmd = exec.Command("mkdir", "-p", dst)
+		_, _ = cmd.Output()
+	}
 
 	for _, v := range foldersToPull {
 
@@ -64,7 +85,7 @@ func pull() {
 			continue
 		}
 
-		pull := exec.Command("adb", "pull", v, strings.ReplaceAll(dst, "\r\n", ""))
+		pull := exec.Command("adb", "pull", v, dst)
 
 		// print command with src and dst paths
 		fmt.Println(pull)
