@@ -1,5 +1,8 @@
 # adb-go
 
+NOTE: if you want to pull everything, and I mean EVERYTHING from your phone, just do `adb pull sdcard/`, otherwise
+read on:
+
 All of this can be done with a few lines of bash, however:
 
 I want to be able to plug any device and with one simple command pull all data from it,
