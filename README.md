@@ -37,4 +37,6 @@ TODO:
 
 - [ ] Think about automatic sync when device is plugged in
 
+- [ ] Make it cross platform - support unix-style paths too, etc
+
 PROFIT
