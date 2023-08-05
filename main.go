@@ -135,8 +135,7 @@ func GetDestination(cfg Config) string {
 	return cfg.dst + GetDeviceId()
 }
 
-func pull() {
-	cfg := GetConfig()
+func pull(cfg Config) {
 	dst := GetDestination(cfg)
 	foldersToPull := GetFoldersToPull()
 
@@ -152,8 +151,10 @@ func main() {
 
 	fmt.Println("Running in mode: " + *modePtr)
 
+	cfg := GetConfig()
+
 	if *modePtr == "pull" {
-		pull()
+		pull(cfg)
 	} else {
 		fmt.Println("no such mode, or no mode passed. try to run with '-mode pull'")
 	}
