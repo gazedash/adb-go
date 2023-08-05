@@ -24,18 +24,26 @@ func NormalizeNewlines(d []byte) []byte {
 
 var newline = "\n"
 
-func pull() {
-	// Dirs to be ignored when pulling
-	pullignoreData, _ := os.ReadFile(".pullignore")
-	pullignore := strings.Split(string(NormalizeNewlines(pullignoreData)), newline)
-	configData, _ := os.ReadFile("config")
-	config := strings.Split(string(NormalizeNewlines(configData)), newline)
-	dst := ""
+func SplitByNewLine(bytes []byte) []string {
+	return strings.Split(string(NormalizeNewlines(bytes)), newline)
+}
 
+func GetDeviceId() string {
 	// Get seial number, as reported by adb devices
 	cmd := exec.Command("adb", "shell", "getprop", "ro.serialno")
 	device_id_data, _ := cmd.Output()
-	device_id := strings.ReplaceAll(string(NormalizeNewlines(device_id_data)), newline, "")
+	return strings.ReplaceAll(string(NormalizeNewlines(device_id_data)), newline, "")
+}
+
+type Config struct {
+	dst string
+}
+
+func GetConfig() Config {
+	configData, _ := os.ReadFile("config")
+	config := SplitByNewLine(configData)
+
+	dst := ""
 
 	for _, v := range config {
 		option := strings.Split(v, "=")
@@ -44,43 +52,17 @@ func pull() {
 
 		// handle config options
 		if key == "DST" {
-			dst = value + string(os.PathSeparator) + device_id
+			dst = value + string(os.PathSeparator)
 		}
 	}
 
-	ls := exec.Command("adb", "shell", "ls", "-d", "/sdcard/*")
+	cfg := Config{dst}
 
-	stdout, _ := ls.Output()
+	return cfg
+}
 
-	folders := strings.Split(string(NormalizeNewlines(stdout)), newline)
-
-	// exclude ignored folders
-	foldersToPull := make([]string, len(folders))
-	for _, v := range folders {
-		if slices.Contains(pullignore, strings.Trim(v, " ")) == false {
-			foldersToPull = append(foldersToPull, strings.Trim(v, " "))
-		}
-	}
-
-	fmt.Println("Pulling these dirs: " + strings.Trim(strings.Join(foldersToPull, " "), " "))
-	fmt.Println(".....................")
-	fmt.Println("to...................")
-	fmt.Println(dst)
-	fmt.Println(".....................")
-
-	// easy way to guesstimate the env we're running on, cuz
-	// it can be: Windows, linux, Git Bash, WSL (run from .exe), WSL (run from "elf" linux binary)
-	if strings.Contains(string(stdout), "\r\n") {
-		// cmd cuz os.MkdirAll is too stupid (maybe it's only a Windows problem?)
-		cmd = exec.Command("cmd", "/c", "mkdir", dst)
-		_, _ = cmd.Output()
-	} else {
-		cmd = exec.Command("mkdir", "-p", dst)
-		_, _ = cmd.Output()
-	}
-
+func PullFiles(foldersToPull []string, dst string) {
 	for _, v := range foldersToPull {
-
 		if v == "" {
 			continue
 		}
@@ -95,6 +77,71 @@ func pull() {
 		// print result
 		fmt.Println(string(stdout))
 	}
+}
+
+func MkdirP(dst string, isWindows bool) {
+	// easy way to guesstimate the env we're running on, cuz
+	// it can be: Windows, linux, Git Bash, WSL (run from .exe), WSL (run from "elf" linux binary)
+	if isWindows {
+		// cmd cuz os.MkdirAll is too stupid (maybe it's only a Windows problem?)
+		cmd := exec.Command("cmd", "/c", "mkdir", dst)
+		_, _ = cmd.Output()
+	} else {
+		cmd := exec.Command("mkdir", "-p", dst)
+		_, _ = cmd.Output()
+	}
+}
+
+func GetFoldersToPull() []string {
+	// Dirs to be ignored when pulling
+	pullignoreData, _ := os.ReadFile(".pullignore")
+	pullignore := SplitByNewLine(pullignoreData)
+
+	ls := exec.Command("adb", "shell", "ls", "-d", "/sdcard/*")
+
+	stdout, _ := ls.Output()
+
+	folders := SplitByNewLine(stdout)
+	// exclude ignored folders
+	foldersToPull := make([]string, len(folders))
+	for _, v := range folders {
+		if slices.Contains(pullignore, strings.Trim(v, " ")) == false {
+			foldersToPull = append(foldersToPull, strings.Trim(v, " "))
+		}
+	}
+
+	return foldersToPull
+}
+
+func IsWindows() bool {
+	testCommand := exec.Command("adb", "shell", "echo", "test")
+	stdout, _ := testCommand.Output()
+	isWindows := strings.Contains(string(stdout), "\r\n")
+
+	return isWindows
+}
+
+func PreparePull(foldersToPull []string, dst string) {
+	fmt.Println("Pulling these dirs: " + strings.Trim(strings.Join(foldersToPull, " "), " "))
+	fmt.Println("To...................")
+	fmt.Println(dst)
+	fmt.Println("Pulling.....................")
+
+	MkdirP(dst, IsWindows())
+}
+
+func GetDestination(cfg Config) string {
+	// Destination is a path from config + device_id folder
+	return cfg.dst + GetDeviceId()
+}
+
+func pull() {
+	cfg := GetConfig()
+	dst := GetDestination(cfg)
+	foldersToPull := GetFoldersToPull()
+
+	PreparePull(foldersToPull, dst)
+	PullFiles(foldersToPull, dst)
 }
 
 func main() {
