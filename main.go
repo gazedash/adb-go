@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"golang.org/x/exp/slices"
 )
@@ -143,6 +144,42 @@ func pull(cfg Config) {
 	PullFiles(foldersToPull, dst)
 }
 
+func PreparePush() {
+	fmt.Println("Pushing.....................")
+	fmt.Println("/sdcard/Pushed")
+	fmt.Println("Pushing.....................")
+}
+
+func PushFiles(cfg Config) {
+	dst := "/sdcard/Pushed"
+
+	dirPath := GetDestination(cfg) + string(os.PathSeparator) + "Push"
+
+	push := exec.Command("adb", "push", dirPath, dst)
+
+	// print command
+	fmt.Println(push)
+
+	stdout, err := push.Output()
+
+	fmt.Println(string(stdout))
+
+	if err == nil {
+		t := time.Now()
+		date := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d",
+			t.Year(), t.Month(), t.Day(),
+			t.Hour(), t.Minute(), t.Second())
+
+		os.Rename(dirPath, dirPath+date)
+		MkdirP(dirPath, IsWindows())
+	}
+}
+
+func push(cfg Config) {
+	PreparePush()
+	PushFiles(cfg)
+}
+
 func main() {
 	// flags are easier than args, it just works (c)
 	modePtr := flag.String("mode", "", "a string")
@@ -155,6 +192,8 @@ func main() {
 
 	if *modePtr == "pull" {
 		pull(cfg)
+	} else if *modePtr == "push" {
+		push(cfg)
 	} else {
 		fmt.Println("no such mode, or no mode passed. try to run with '-mode pull'")
 	}
