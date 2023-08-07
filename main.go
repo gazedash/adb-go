@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 // NormalizeNewlines normalizes \r\n (windows) and \r (mac)
@@ -93,12 +91,34 @@ func MkdirP(dst string, isWindows bool) {
 	}
 }
 
+type Target struct {
+	separator string
+	path string
+}
+
+var target = Target{
+	separator: "/",
+	path: "sdcard",
+}
+
+func (t *Target) getPath() string {
+	return t.separator + t.path
+}
+
+func (t *Target) getDir(dir string) string {
+	return t.getPath() + t.separator + dir
+}
+
+func (t *Target) allFilesGlob() string {
+	return t.getDir("*")
+}
+
 func GetFoldersToPull() []string {
 	// Dirs to be ignored when pulling
 	pullignoreData, _ := os.ReadFile(".pullignore")
-	pullignore := SplitByNewLine(pullignoreData)
+	pullignore := strings.ReplaceAll(string(NormalizeNewlines(pullignoreData)), newline, " ")
 
-	ls := exec.Command("adb", "shell", "ls", "-d", "/sdcard/*")
+	ls := exec.Command("adb", "shell", "ls", "-d", target.allFilesGlob())
 
 	stdout, _ := ls.Output()
 
@@ -106,8 +126,9 @@ func GetFoldersToPull() []string {
 	// exclude ignored folders
 	foldersToPull := make([]string, len(folders))
 	for _, v := range folders {
-		if slices.Contains(pullignore, strings.Trim(v, " ")) == false {
-			foldersToPull = append(foldersToPull, strings.Trim(v, " "))
+		folder := strings.Trim(v, " ")
+		if strings.Contains(pullignore, folder) == false {
+			foldersToPull = append(foldersToPull, folder)
 		}
 	}
 
@@ -144,18 +165,18 @@ func pull(cfg Config) {
 	PullFiles(foldersToPull, dst)
 }
 
+var pushDirName = "Push"
+
 func PreparePush() {
 	fmt.Println("Pushing.....................")
-	fmt.Println("/sdcard/Push")
+	fmt.Println(target.getDir(pushDirName))
 	fmt.Println("Pushing.....................")
 }
 
 func PushFiles(cfg Config) {
-	dst := "/sdcard"
+	dirPath := GetDestination(cfg) + string(os.PathSeparator) + pushDirName
 
-	dirPath := GetDestination(cfg) + string(os.PathSeparator) + "Push"
-
-	push := exec.Command("adb", "push", dirPath, dst)
+	push := exec.Command("adb", "push", dirPath, target.getPath())
 
 	// print command
 	fmt.Println(push)
