@@ -63,10 +63,12 @@ TODO:
 
 - [ ] Implement per-device .pullignore based on device id
 
-- [ ] Implement push
+- [X] Implement push
 
 - [ ] Think about automatic sync when device is plugged in
 
 - [ ] Make it cross platform - support unix-style paths too, etc
+
+- [ ] Ignore already pulled files? Does adb check if files exist and doesn't copy same files or not?
 
 PROFIT
