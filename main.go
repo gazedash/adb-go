@@ -146,7 +146,7 @@ func pull(cfg Config) {
 
 func PreparePush() {
 	fmt.Println("Pushing.....................")
-	fmt.Println("/sdcard/Pushed")
+	fmt.Println("/sdcard/Push")
 	fmt.Println("Pushing.....................")
 }
 
