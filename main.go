@@ -151,7 +151,7 @@ func PreparePush() {
 }
 
 func PushFiles(cfg Config) {
-	dst := "/sdcard/Pushed"
+	dst := "/sdcard"
 
 	dirPath := GetDestination(cfg) + string(os.PathSeparator) + "Push"
 
