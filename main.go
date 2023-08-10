@@ -93,12 +93,12 @@ func MkdirP(dst string, isWindows bool) {
 
 type Target struct {
 	separator string
-	path string
+	path      string
 }
 
 var target = Target{
 	separator: "/",
-	path: "sdcard",
+	path:      "sdcard",
 }
 
 func (t *Target) getPath() string {
@@ -185,13 +185,22 @@ func PushFiles(cfg Config) {
 
 	fmt.Println(string(stdout))
 
+	// fmt.Println(err)
+
 	if err == nil {
 		t := time.Now()
-		date := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d",
+		date := fmt.Sprintf("%d-%02d-%02dT%02d_%02d_%02d",
 			t.Year(), t.Month(), t.Day(),
 			t.Hour(), t.Minute(), t.Second())
 
-		os.Rename(dirPath, dirPath+date)
+		// fmt.Println(date)
+		// fmt.Println(dirPath)
+		// fmt.Println(dirPath + date)
+
+		err := os.Rename(dirPath, dirPath+date)
+
+		fmt.Println(err)
+
 		MkdirP(dirPath, IsWindows())
 	}
 }
