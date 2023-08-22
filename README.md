@@ -71,4 +71,6 @@ TODO:
 
 - [ ] Ignore already pulled files? Does adb check if files exist and doesn't copy same files or not? (apparently adb skips already pulled/pushed files)
 
+- [ ] GUI? Auto start?
+
 PROFIT
