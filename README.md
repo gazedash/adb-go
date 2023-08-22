@@ -75,4 +75,6 @@ TODO:
 
 - [ ] Pass logs from server to client
 
+- [ ] Show connected device id
+
 PROFIT
