@@ -65,12 +65,14 @@ TODO:
 
 - [X] Implement push
 
-- [ ] Think about automatic sync when device is plugged in
+- [ ] Think about automatic sync when device is plugged in (autorun, service)
 
 - [ ] Make it cross platform - support unix-style paths too, etc (implemented, not tested)
 
 - [ ] Ignore already pulled files? Does adb check if files exist and doesn't copy same files or not? (apparently adb skips already pulled/pushed files)
 
-- [ ] GUI? Auto start?
+- [X] GUI - basic GUI in HTML done
+
+- [ ] Pass logs from server to client
 
 PROFIT
