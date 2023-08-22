@@ -9,34 +9,78 @@
 </head>
 
 <body>
-   <div class="content">
-    <h1>
-        Hello!
-    </h1>
+    <div class="content">
 
-    <div class="flex">
-        <button onclick="fetch('/pull')">&#8601; Pull</button>
-        <button onclick="fetch('/push')">&#8599; Push</button>
+
+        <div class="flex">
+            <h1>
+                Hello!
+            </h1>
+            <div class="flex-layout">
+                <button onclick="fetch('/pull')">&#8601; Pull</button>
+                <button onclick="fetch('/push')">&#8599; Push</button>
+            </div>
+    
+            <textarea class="logs" id="logs" data-theme="dark" readonly>Logs be here...!</textarea>
+        </div>
+
     </div>
-   </div>
 
+    <script>
+        const socket = new WebSocket('ws://localhost:5151/ws');
+        socket.addEventListener('open', function (event) {
+            // alert('open!')
+            socket.send('Hello Server!');
+        });
+
+        let hasResponse = false
+
+        socket.addEventListener('message', function (event) {
+            var div = document.getElementById('logs');
+
+            if (!hasResponse) {
+                div.innerHTML = '';
+                hasResponse = true;
+            }
+            // alert('message')
+
+            // remove "..." quotes
+            div.innerHTML += event.data + '\n';
+        });
+    </script>
 </body>
 <style>
-    body {
-        height: 100vh;
-        padding: 20px;
+    .logs {
+        /* height: 300px; */
+        height: 100%;
+        font-family: monospace;
     }
+
+    html, body {
+        /* height: 100vh; */
+        height: 100%;
+    }
+
+    
 
     h1 {
         font-size: 36px;
     }
 
     .content {
+        padding: 20px;
+
         height: 100%;
 
     }
 
     .flex {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .flex-layout {
         display: flex;
         width: 100%;
         gap: 20px;
@@ -52,4 +96,5 @@
         height: 100px;
     }
 </style>
+
 </html>

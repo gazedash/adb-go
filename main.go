@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"golang.org/x/net/websocket"
 )
 
 // NormalizeNewlines normalizes \r\n (windows) and \r (mac)
@@ -71,12 +73,12 @@ func PullFiles(foldersToPull []string, dst string) {
 		pull := exec.Command("adb", "pull", v, dst)
 
 		// print command with src and dst paths
-		fmt.Println(pull)
+		print(pull.String())
 
 		stdout, _ := pull.Output()
 
 		// print result
-		fmt.Println(string(stdout))
+		print(string(stdout))
 	}
 }
 
@@ -90,6 +92,14 @@ func MkdirP(dst string, isWindows bool) {
 	} else {
 		cmd := exec.Command("mkdir", "-p", dst)
 		_, _ = cmd.Output()
+	}
+}
+
+func print(str string) {
+	if msgChan != nil {
+		msgChan <- str
+	} else {
+		fmt.Println(str)
 	}
 }
 
@@ -146,10 +156,10 @@ func IsWindows() bool {
 }
 
 func PreparePull(foldersToPull []string, dst string) {
-	fmt.Println("Pulling these dirs: " + strings.Trim(strings.Join(foldersToPull, " "), " "))
-	fmt.Println("To...................")
-	fmt.Println(dst)
-	fmt.Println("Pulling.....................")
+	print("Pulling these dirs: " + strings.Trim(strings.Join(foldersToPull, " "), " "))
+	print("To...................")
+	print(dst)
+	print("Pulling.....................")
 
 	MkdirP(dst, IsWindows())
 }
@@ -170,9 +180,9 @@ func pull(cfg Config) {
 var pushDirName = "Push"
 
 func PreparePush() {
-	fmt.Println("Pushing.....................")
-	fmt.Println(target.getDir(pushDirName))
-	fmt.Println("Pushing.....................")
+	print("Pushing.....................")
+	print(target.getDir(pushDirName))
+	print("Pushing.....................")
 }
 
 func PushFiles(cfg Config) {
@@ -181,11 +191,11 @@ func PushFiles(cfg Config) {
 	push := exec.Command("adb", "push", dirPath, target.getPath())
 
 	// print command
-	fmt.Println(push)
+	print(push.String())
 
 	stdout, err := push.Output()
 
-	fmt.Println(string(stdout))
+	print(string(stdout))
 
 	// fmt.Println(err)
 
@@ -201,7 +211,7 @@ func PushFiles(cfg Config) {
 
 		err := os.Rename(dirPath, dirPath+date)
 
-		fmt.Println(err)
+		print(err.Error())
 
 		MkdirP(dirPath, IsWindows())
 	}
@@ -230,26 +240,41 @@ func OpenBrowser(url string) {
 	}
 }
 
+var msgChan chan string = make(chan string)
+
 func server(cfg Config) {
 	port := "5151"
 	addr := "http://localhost:" + port
 
 	OpenBrowser(addr)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
+		for {
+			select {
+			case msg := <-msgChan:
+				websocket.JSON.Send(ws, msg)
+			}
+		}
+	}))
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		bytes, _ := os.ReadFile("./index.html")
 		w.Write(bytes)
 	})
 
-	http.HandleFunc("/pull", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/pull", func(w http.ResponseWriter, r *http.Request) {
 		pull(cfg)
 	})
 
-	http.HandleFunc("/push", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/push", func(w http.ResponseWriter, r *http.Request) {
 		push(cfg)
 	})
 
-	http.ListenAndServe(":"+port, nil)
+	s := http.Server{Addr: ":" + port, Handler: mux}
+
+	s.ListenAndServe()
 }
 
 var serverMode = "server"
