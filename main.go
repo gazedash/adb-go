@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -210,21 +212,72 @@ func push(cfg Config) {
 	PushFiles(cfg)
 }
 
+func OpenBrowser(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		panic(err)
+	}
+}
+
+func server(cfg Config) {
+	port := "5151"
+	addr := "http://localhost:" + port
+
+	OpenBrowser(addr)
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		bytes, _ := os.ReadFile("./index.html")
+		w.Write(bytes)
+	})
+
+	http.HandleFunc("/pull", func(w http.ResponseWriter, r *http.Request) {
+		pull(cfg)
+	})
+
+	http.HandleFunc("/push", func(w http.ResponseWriter, r *http.Request) {
+		push(cfg)
+	})
+
+	http.ListenAndServe(":"+port, nil)
+}
+
+var serverMode = "server"
+
 func main() {
+	cfg := GetConfig()
+
 	// flags are easier than args, it just works (c)
 	modePtr := flag.String("mode", "", "a string")
+
+	if *modePtr == "" {
+		modePtr = &serverMode
+	}
 
 	flag.Parse()
 
 	fmt.Println("Running in mode: " + *modePtr)
 
-	cfg := GetConfig()
-
 	if *modePtr == "pull" {
 		pull(cfg)
 	} else if *modePtr == "push" {
 		push(cfg)
+	} else if *modePtr == "server" {
+		server(cfg)
+
+		fmt.Println("starting in server mode by default...")
 	} else {
 		fmt.Println("no such mode, or no mode passed. try to run with '-mode pull'")
+		fmt.Println("available modes: pull, push, server")
 	}
 }

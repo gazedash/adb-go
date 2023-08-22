@@ -67,8 +67,8 @@ TODO:
 
 - [ ] Think about automatic sync when device is plugged in
 
-- [ ] Make it cross platform - support unix-style paths too, etc
+- [ ] Make it cross platform - support unix-style paths too, etc (implemented, not tested)
 
-- [ ] Ignore already pulled files? Does adb check if files exist and doesn't copy same files or not?
+- [ ] Ignore already pulled files? Does adb check if files exist and doesn't copy same files or not? (apparently adb skips already pulled/pushed files)
 
 PROFIT

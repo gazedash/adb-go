@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello world</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+
+<body>
+   <div class="content">
+    <h1>
+        Hello!
+    </h1>
+
+    <div class="flex">
+        <button onclick="fetch('/pull')">&#8601; Pull</button>
+        <button onclick="fetch('/push')">&#8599; Push</button>
+    </div>
+   </div>
+
+</body>
+<style>
+    body {
+        height: 100vh;
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 36px;
+    }
+
+    .content {
+        height: 100%;
+
+    }
+
+    .flex {
+        display: flex;
+        width: 100%;
+        gap: 20px;
+        align-content: center;
+        justify-content: center;
+        justify-items: center;
+        align-items: center;
+    }
+
+    .flex button {
+        font-size: 50px;
+        width: 100%;
+        height: 100px;
+    }
+</style>
+</html>
