@@ -209,7 +209,7 @@ func PushFiles(cfg Config) {
 		// fmt.Println(dirPath)
 		// fmt.Println(dirPath + date)
 
-		err := os.Rename(dirPath, dirPath+date)
+		err := os.Rename(dirPath, dirPath+"_"+date)
 
 		print(err.Error())
 
@@ -242,6 +242,20 @@ func OpenBrowser(url string) {
 
 var msgChan chan string = make(chan string)
 
+func wsHandler(ws *websocket.Conn) {
+	for {
+		select {
+		case msg := <-msgChan:
+			websocket.JSON.Send(ws, msg)
+		}
+	}
+}
+
+func serveHtml(w http.ResponseWriter) {
+	bytes, _ := os.ReadFile("./index.html")
+	w.Write(bytes)
+}
+
 func server(cfg Config) {
 	port := "5151"
 	addr := "http://localhost:" + port
@@ -250,26 +264,20 @@ func server(cfg Config) {
 
 	mux := http.NewServeMux()
 
-	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
-		for {
-			select {
-			case msg := <-msgChan:
-				websocket.JSON.Send(ws, msg)
-			}
-		}
-	}))
-
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		bytes, _ := os.ReadFile("./index.html")
-		w.Write(bytes)
+		go serveHtml(w)
 	})
 
+	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
+		go wsHandler(ws)
+	}))
+
 	mux.HandleFunc("/pull", func(w http.ResponseWriter, r *http.Request) {
-		pull(cfg)
+		go pull(cfg)
 	})
 
 	mux.HandleFunc("/push", func(w http.ResponseWriter, r *http.Request) {
-		push(cfg)
+		go push(cfg)
 	})
 
 	s := http.Server{Addr: ":" + port, Handler: mux}
