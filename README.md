@@ -59,6 +59,8 @@ Note: this is not tested.
 
 TODO:
 
+- [ ] One button to rule them all?
+
 - [ ] Ability to pass .pullignore from cmd OR
 
 - [ ] Implement per-device .pullignore based on device id

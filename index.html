@@ -10,26 +10,45 @@
 
 <body>
     <div class="content">
-
-
         <div class="flex">
             <h1>
                 Hello!
             </h1>
             <div class="flex-layout">
-                <button onclick="fetch('/pull')">&#8601; Pull</button>
-                <button onclick="fetch('/push')">&#8599; Push</button>
+                <button id="sync" onclick="execute('/sync')">&#128257; Sync</button>
             </div>
-    
+            <div class="flex-layout">
+                <button id="pull" onclick="execute('/pull')">&#8601; Pull</button>
+                <button id="push" onclick="execute('/push')">&#8599; Push</button>
+            </div>
+
             <textarea class="logs" id="logs" data-theme="dark" readonly>Logs be here...!</textarea>
         </div>
 
     </div>
 
     <script>
+        let disabled;
+
+        function toggleBtns() {
+            // disable all buttons while process is running
+            // enable when finished
+            const buttonIds = ['#pull', '#push', '#sync']
+
+            buttonIds.forEach(btnId => {
+                const elem = document.querySelector(btnId)
+                disabled = !disabled;
+                elem.disabled = disabled;
+            })
+        }
+
+        function execute(action) {
+            fetch(action)
+            toggleBtns()
+        }
+
         const socket = new WebSocket('ws://localhost:5151/ws');
         socket.addEventListener('open', function (event) {
-            // alert('open!')
             socket.send('Hello Server!');
         });
 
@@ -38,30 +57,31 @@
         socket.addEventListener('message', function (event) {
             var div = document.getElementById('logs');
 
+            if (typeof event.data === 'string') {
+                if (event.data.includes('FinishedEvent')) {
+                    toggleBtns()
+                }
+            }
+
             if (!hasResponse) {
                 div.innerHTML = '';
                 hasResponse = true;
             }
-            // alert('message')
 
-            // remove "..." quotes
             div.innerHTML += event.data + '\n';
         });
     </script>
 </body>
 <style>
     .logs {
-        /* height: 300px; */
         height: 100%;
         font-family: monospace;
     }
 
-    html, body {
-        /* height: 100vh; */
+    html,
+    body {
         height: 100%;
     }
-
-    
 
     h1 {
         font-size: 36px;
@@ -69,9 +89,7 @@
 
     .content {
         padding: 20px;
-
         height: 100%;
-
     }
 
     .flex {

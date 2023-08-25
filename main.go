@@ -242,18 +242,43 @@ func OpenBrowser(url string) {
 
 var msgChan chan string = make(chan string)
 
-func wsHandler(ws *websocket.Conn) {
-	for {
-		select {
-		case msg := <-msgChan:
-			websocket.JSON.Send(ws, msg)
+func wsHandler(mux *http.ServeMux) {
+	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
+		for {
+			select {
+			case msg := <-msgChan:
+				websocket.JSON.Send(ws, msg)
+			}
 		}
-	}
+	}))
 }
 
-func serveHtml(w http.ResponseWriter) {
-	bytes, _ := os.ReadFile("./index.html")
-	w.Write(bytes)
+func serveHtml(mux *http.ServeMux) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		bytes, _ := os.ReadFile("./index.html")
+		w.Write(bytes)
+	})
+}
+
+func pullHandler(mux *http.ServeMux, cfg Config) {
+	mux.HandleFunc("/pull", func(w http.ResponseWriter, r *http.Request) {
+		pull(cfg)
+		msgChan <- "FinishedEvent"
+	})
+}
+
+func pushHandler(mux *http.ServeMux, cfg Config) {
+	mux.HandleFunc("/push", func(w http.ResponseWriter, r *http.Request) {
+		push(cfg)
+		msgChan <- "FinishedEvent"
+	})
+}
+
+func syncHandler(mux *http.ServeMux, cfg Config) {
+	mux.HandleFunc("/sync", func(w http.ResponseWriter, r *http.Request) {
+		sync(cfg)
+		msgChan <- "FinishedEvent"
+	})
 }
 
 func server(cfg Config) {
@@ -264,21 +289,11 @@ func server(cfg Config) {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		go serveHtml(w)
-	})
-
-	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
-		go wsHandler(ws)
-	}))
-
-	mux.HandleFunc("/pull", func(w http.ResponseWriter, r *http.Request) {
-		go pull(cfg)
-	})
-
-	mux.HandleFunc("/push", func(w http.ResponseWriter, r *http.Request) {
-		go push(cfg)
-	})
+	go serveHtml(mux)
+	go wsHandler(mux)
+	go syncHandler(mux, cfg)
+	go pullHandler(mux, cfg)
+	go pushHandler(mux, cfg)
 
 	s := http.Server{Addr: ":" + port, Handler: mux}
 
@@ -286,6 +301,11 @@ func server(cfg Config) {
 }
 
 var serverMode = "server"
+
+func sync(cfg Config) {
+	go pull(cfg)
+	go push(cfg)
+}
 
 func main() {
 	cfg := GetConfig()
@@ -305,6 +325,8 @@ func main() {
 		pull(cfg)
 	} else if *modePtr == "push" {
 		push(cfg)
+	} else if *modePtr == "sync" {
+		sync(cfg)
 	} else if *modePtr == "server" {
 		server(cfg)
 
