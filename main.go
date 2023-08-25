@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -81,6 +82,8 @@ func PullFiles(foldersToPull []string, dst string) {
 		// print result
 		print(string(stdout))
 	}
+
+	print("pull finished")
 }
 
 func MkdirP(dst string, isWindows bool) {
@@ -171,13 +174,15 @@ func GetDestination(cfg Config) string {
 }
 
 func pull(cfg Config) {
-	allNodesWaitGroup.Add(1)
+	// wg.Add(1)
 
 	dst := GetDestination(cfg)
 	foldersToPull := GetFoldersToPull()
 
 	PreparePull(foldersToPull, dst)
 	PullFiles(foldersToPull, dst)
+
+	wg.Done()
 }
 
 var pushDirName = "Push"
@@ -186,6 +191,20 @@ func PreparePush() {
 	print("Pushing.....................")
 	print(target.getDir(pushDirName))
 	print("Pushing.....................")
+}
+
+func IsEmpty(name string) bool {
+	f, err := os.Open(name)
+	if err != nil {
+		return true
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1) // Or f.Readdir(1)
+	if err == io.EOF {
+		return true
+	}
+	return false
 }
 
 func PushFiles(cfg Config) {
@@ -200,9 +219,15 @@ func PushFiles(cfg Config) {
 
 	stdout, err := push.Output()
 
+	if err != nil {
+		print(err.Error())
+	}
 	print(string(stdout))
 
-	// fmt.Println(err)
+	if IsEmpty(dirPath) {
+		print("push dir empty, fin")
+		return
+	}
 
 	if err == nil {
 		t := time.Now()
@@ -220,13 +245,17 @@ func PushFiles(cfg Config) {
 
 		MkdirP(dirPath, IsWindows())
 	}
+
+	print("push finished")
 }
 
 func push(cfg Config) {
-	allNodesWaitGroup.Add(1)
+	// wg.Add(1)
 
 	PreparePush()
 	PushFiles(cfg)
+
+	wg.Done()
 }
 
 func OpenBrowser(url string) {
@@ -283,6 +312,7 @@ func syncHandler(mux *http.ServeMux, cfg Config) {
 	mux.HandleFunc("/sync", func(w http.ResponseWriter, r *http.Request) {
 		doSync(cfg)
 		msgChan <- "FinishedEvent"
+		print("server sync end")
 	})
 }
 
@@ -307,14 +337,17 @@ func server(cfg Config) {
 
 var serverMode = "server"
 
-var allNodesWaitGroup sync.WaitGroup
+var wg sync.WaitGroup
 
 func doSync(cfg Config) {
+	wg.Add(2)
 
 	go push(cfg)
 	go pull(cfg)
 
-	allNodesWaitGroup.Wait()
+	wg.Wait()
+
+	print("doSync end")
 }
 
 func main() {
@@ -337,6 +370,8 @@ func main() {
 		push(cfg)
 	} else if *modePtr == "sync" {
 		doSync(cfg)
+
+		print("cmd sync end")
 	} else if *modePtr == "server" {
 		server(cfg)
 
