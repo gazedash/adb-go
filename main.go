@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/net/websocket"
@@ -170,6 +171,8 @@ func GetDestination(cfg Config) string {
 }
 
 func pull(cfg Config) {
+	allNodesWaitGroup.Add(1)
+
 	dst := GetDestination(cfg)
 	foldersToPull := GetFoldersToPull()
 
@@ -187,6 +190,8 @@ func PreparePush() {
 
 func PushFiles(cfg Config) {
 	dirPath := GetDestination(cfg) + string(os.PathSeparator) + pushDirName
+
+	MkdirP(dirPath, IsWindows())
 
 	push := exec.Command("adb", "push", dirPath, target.getPath())
 
@@ -218,6 +223,8 @@ func PushFiles(cfg Config) {
 }
 
 func push(cfg Config) {
+	allNodesWaitGroup.Add(1)
+
 	PreparePush()
 	PushFiles(cfg)
 }
@@ -246,8 +253,7 @@ func wsHandler(mux *http.ServeMux) {
 	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
 		for {
 			msg := <-msgChan
-				websocket.JSON.Send(ws, msg)
-			
+			websocket.JSON.Send(ws, msg)
 		}
 	}))
 }
@@ -275,7 +281,7 @@ func pushHandler(mux *http.ServeMux, cfg Config) {
 
 func syncHandler(mux *http.ServeMux, cfg Config) {
 	mux.HandleFunc("/sync", func(w http.ResponseWriter, r *http.Request) {
-		sync(cfg)
+		doSync(cfg)
 		msgChan <- "FinishedEvent"
 	})
 }
@@ -301,9 +307,14 @@ func server(cfg Config) {
 
 var serverMode = "server"
 
-func sync(cfg Config) {
+var allNodesWaitGroup sync.WaitGroup
+
+func doSync(cfg Config) {
+
 	go push(cfg)
 	go pull(cfg)
+
+	allNodesWaitGroup.Wait()
 }
 
 func main() {
@@ -325,7 +336,7 @@ func main() {
 	} else if *modePtr == "push" {
 		push(cfg)
 	} else if *modePtr == "sync" {
-		sync(cfg)
+		doSync(cfg)
 	} else if *modePtr == "server" {
 		server(cfg)
 
