@@ -303,8 +303,8 @@ func server(cfg Config) {
 var serverMode = "server"
 
 func sync(cfg Config) {
-	go pull(cfg)
 	go push(cfg)
+	go pull(cfg)
 }
 
 func main() {
@@ -333,6 +333,6 @@ func main() {
 		fmt.Println("starting in server mode by default...")
 	} else {
 		fmt.Println("no such mode, or no mode passed. try to run with '-mode pull'")
-		fmt.Println("available modes: pull, push, server")
+		fmt.Println("available modes: pull, push, sync, server")
 	}
 }
