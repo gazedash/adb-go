@@ -35,9 +35,10 @@
             // enable when finished
             const buttonIds = ['#pull', '#push', '#sync']
 
+            disabled = !disabled;
+
             buttonIds.forEach(btnId => {
                 const elem = document.querySelector(btnId)
-                disabled = !disabled;
                 elem.disabled = disabled;
             })
         }
