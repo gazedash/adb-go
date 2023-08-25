@@ -96,10 +96,10 @@ func MkdirP(dst string, isWindows bool) {
 }
 
 func print(str string) {
+	fmt.Println(str)
+
 	if msgChan != nil {
 		msgChan <- str
-	} else {
-		fmt.Println(str)
 	}
 }
 
@@ -245,10 +245,9 @@ var msgChan chan string = make(chan string)
 func wsHandler(mux *http.ServeMux) {
 	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
 		for {
-			select {
-			case msg := <-msgChan:
+			msg := <-msgChan
 				websocket.JSON.Send(ws, msg)
-			}
+			
 		}
 	}))
 }
