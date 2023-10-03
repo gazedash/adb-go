@@ -1,5 +1,7 @@
 # adb-go
 
+![alt text](https://github.com/gazedash/adb-go/blob/master/Screenshot%202023-10-03%20at%2022-06-47%20adbgo.png))](https://github.com/gazedash/adb-go/blob/master/Screenshot%202023-10-03%20at%2022-06-47%20adbgo.png)
+
 NOTE: if you want to pull everything, and I mean EVERYTHING from your phone, just do `adb pull sdcard/`, otherwise
 read on:
 
