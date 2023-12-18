@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -243,9 +244,37 @@ func PushFiles(cfg Config) {
 	print("push finished")
 }
 
+func PushPathFiles(cfg Config, path string) {
+	push := exec.Command("adb", "push", path, target.getPath())
+
+	// print command
+	print(push.String())
+
+	stdout, err := push.Output()
+
+	if err != nil {
+		print(err.Error())
+	}
+
+	print(string(stdout))
+
+	print("push path finished")
+}
+
 func push(cfg Config) {
 	PreparePush()
 	PushFiles(cfg)
+}
+
+func PreparePushPath(path string) {
+	print("@ Pushing path.....................")
+	print(path)
+	print("@ Pushing path.....................")
+}
+
+func pushPath(cfg Config, path string) {
+	PreparePushPath(path)
+	PushPathFiles(cfg, path)
 }
 
 func OpenBrowser(url string) {
@@ -298,6 +327,15 @@ func pushHandler(mux *http.ServeMux, cfg Config) {
 	})
 }
 
+func pushPathHandler(mux *http.ServeMux, cfg Config) {
+	mux.HandleFunc("/pushPath", func(w http.ResponseWriter, r *http.Request) {
+		body, _ := ioutil.ReadAll(r.Body)
+		print(string(body))
+		pushPath(cfg, string(body))
+		msgChan <- "FinishedEvent"
+	})
+}
+
 func syncHandler(mux *http.ServeMux, cfg Config) {
 	mux.HandleFunc("/sync", func(w http.ResponseWriter, r *http.Request) {
 		doSync(cfg)
@@ -319,6 +357,7 @@ func server(cfg Config) {
 	syncHandler(mux, cfg)
 	pullHandler(mux, cfg)
 	pushHandler(mux, cfg)
+	pushPathHandler(mux, cfg)
 
 	s := http.Server{Addr: ":" + port, Handler: mux}
 

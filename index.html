@@ -11,9 +11,14 @@
 <body>
     <div class="content">
         <div class="flex">
-            <h1>
+            <h6 class="heading">
                 Welcome to adbgo!
-            </h1>
+            </h6>
+            <div class="flex-layout">
+                <input placeholder="C:\Files\Folder or C:\SomeFile.mp3" id="pushPathInput" type="text" />
+                <button id="pushPathBtn" onclick="pushPath()">&#10174; Push By Path</button>
+            </div>
+            
             <div class="flex-layout">
                 <button id="sync" onclick="execute('/sync')">&#128257; Sync</button>
             </div>
@@ -33,7 +38,7 @@
         function toggleBtns() {
             // disable all buttons while process is running
             // enable when finished
-            const buttonIds = ['#pull', '#push', '#sync']
+            const buttonIds = ['#pull', '#push', '#sync', '#pushPathBtn']
 
             disabled = !disabled;
 
@@ -45,6 +50,11 @@
 
         function execute(action) {
             fetch(action)
+            toggleBtns()
+        }
+
+        function pushPath() {
+            fetch('/pushPath', {method: 'POST', body: document.getElementById('pushPathInput')?.value})
             toggleBtns()
         }
 
@@ -97,6 +107,10 @@
         display: flex;
         flex-direction: column;
         height: 100%;
+    }
+
+    .heading {
+        margin-bottom: 10px;
     }
 
     .flex-layout {
