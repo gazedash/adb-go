@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/net/websocket"
@@ -174,15 +173,10 @@ func GetDestination(cfg Config) string {
 }
 
 func pull(cfg Config) {
-	// wg.Add(1)
-
 	dst := GetDestination(cfg)
 	foldersToPull := GetFoldersToPull()
-
 	PreparePull(foldersToPull, dst)
 	PullFiles(foldersToPull, dst)
-
-	wg.Done()
 }
 
 var pushDirName = "Push"
@@ -250,12 +244,8 @@ func PushFiles(cfg Config) {
 }
 
 func push(cfg Config) {
-	// wg.Add(1)
-
 	PreparePush()
 	PushFiles(cfg)
-
-	wg.Done()
 }
 
 func OpenBrowser(url string) {
@@ -324,11 +314,11 @@ func server(cfg Config) {
 
 	mux := http.NewServeMux()
 
-	go serveHtml(mux)
-	go wsHandler(mux)
-	go syncHandler(mux, cfg)
-	go pullHandler(mux, cfg)
-	go pushHandler(mux, cfg)
+	serveHtml(mux)
+	wsHandler(mux)
+	syncHandler(mux, cfg)
+	pullHandler(mux, cfg)
+	pushHandler(mux, cfg)
 
 	s := http.Server{Addr: ":" + port, Handler: mux}
 
@@ -337,16 +327,9 @@ func server(cfg Config) {
 
 var serverMode = "server"
 
-var wg sync.WaitGroup
-
 func doSync(cfg Config) {
-	wg.Add(2)
-
-	go push(cfg)
-	go pull(cfg)
-
-	wg.Wait()
-
+	push(cfg)
+	pull(cfg)
 	print("doSync end")
 }
 
