@@ -82,3 +82,5 @@ TODO:
 - [ ] Show connected device id
 
 PROFIT
+
+Build w/o terminal window - `go build -ldflags -H=windowsgui`
