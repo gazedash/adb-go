@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -45,7 +44,28 @@ type Config struct {
 }
 
 func GetConfig() Config {
-	configData, _ := os.ReadFile("config")
+	configData, err := os.ReadFile("config")
+
+	if err != nil {
+		file, _ := os.Create("config")
+		winPath := "DST=C:\\AndroidBackup"
+		linuxPath := "~"
+
+		path := winPath
+
+		if runtime.GOOS == "windows" {
+			path = winPath
+		} else {
+			path = linuxPath
+		}
+
+		file.Write([]byte(path))
+
+		configData, _ = os.ReadFile("config")
+	}
+
+	configData, _ = os.ReadFile("config")
+
 	config := SplitByNewLine(configData)
 
 	dst := ""
@@ -131,7 +151,15 @@ func (t *Target) allFilesGlob() string {
 
 func GetFoldersToPull() []string {
 	// Dirs to be ignored when pulling
-	pullignoreData, _ := os.ReadFile(".pullignore")
+	pullignoreData, err := os.ReadFile(".pullignore")
+
+	if (err != nil) {
+		file, _ := os.Create(".pullignore")
+		file.Write([]byte("/sdcard/Aboba\nArt"))
+	}
+
+	pullignoreData, _ = os.ReadFile(".pullignore")
+
 	pullignore := strings.ReplaceAll(string(NormalizeNewlines(pullignoreData)), newline, " ")
 
 	ls := exec.Command("adb", "shell", "ls", "-d", target.allFilesGlob())
@@ -329,7 +357,7 @@ func pushHandler(mux *http.ServeMux, cfg Config) {
 
 func pushPathHandler(mux *http.ServeMux, cfg Config) {
 	mux.HandleFunc("/pushPath", func(w http.ResponseWriter, r *http.Request) {
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		print(string(body))
 		pushPath(cfg, string(body))
 		msgChan <- "FinishedEvent"
