@@ -19,12 +19,12 @@ jobs:
 
     - name: Build Windows x64
       run: GOOS=windows GOARCH=amd64 go build
-    - name: Zip
-      run: zip release * .pullignore
+    # - name: Zip
+    #   run: zip release * .pullignore
     - name: Upload Release
       uses: ncipollo/release-action@v1.12.0
       with:
         makeLatest: true
         tag: ${{ github.ref_name }}
-        artifacts: "release.zip"
+        artifacts: "adbgo.exe"
         token: ${{ secrets.PAT }}

@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
+	_ "embed"
 	"golang.org/x/net/websocket"
 )
 
@@ -334,9 +334,17 @@ func wsHandler(mux *http.ServeMux) {
 	}))
 }
 
+//go:embed index.html
+var html []byte
+
 func serveHtml(mux *http.ServeMux) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		bytes, _ := os.ReadFile("./index.html")
+		bytes, err := os.ReadFile("./index.html")
+		
+		if err != nil {
+			w.Write(html)
+		}
+
 		w.Write(bytes)
 	})
 }
