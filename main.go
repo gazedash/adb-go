@@ -130,6 +130,12 @@ func PullFiles(files []string, dst string) {
 	var wg sync.WaitGroup
 
 	for _, v := range files {
+		if v == "" {
+			continue
+		}
+		if v == " " {
+			continue
+		}
 		wg.Add(1)
 
 		go Pull(v, dst, &wg)
@@ -140,7 +146,7 @@ func PullFiles(files []string, dst string) {
 	t := time.Now()
 	elapsed := t.Sub(start)
 
-	print(fmt.Sprint(elapsed))
+	print("elapsed:" + fmt.Sprint(elapsed))
 
 	print("pull finished")
 }
@@ -199,31 +205,59 @@ func GetFilesToPull() []string {
 
 	pullignoreData, _ = os.ReadFile(".pullignore")
 
-	pullignore := strings.Split(string(NormalizeNewlines(pullignoreData)), newline)
-
-	print("Ignored dirs:")
-	print(strings.Join(pullignore, " "))
+	pullignore := strings.Split(strings.Trim(string(NormalizeNewlines(pullignoreData)), "\n"), newline)
 
 	files := GetAllFiles()
 	// exclude ignored folders
 	filesToPull := make([]string, len(files))
-	for _, v := range filesToPull {
+
+	print("Ignored dirs: ")
+
+	for _, ignoredFile := range pullignore {
+		print(ignoredFile)
+	}
+
+	print("....")
+
+	count := 0
+
+	for _, v := range files {
+
+		if v == "" {
+			continue
+		}
+
 		file := strings.Trim(v, " ")
 
 		ignored := false
 
 		for _, ignoredFile := range pullignore {
+			if ignoredFile == "" {
+				continue
+			}
+			if ignoredFile == " " {
+				continue
+			}
 			if strings.HasPrefix(file, ignoredFile) == true {
 				ignored = true
 			}
 		}
 
 		if ignored == false {
+			count++
 			filesToPull = append(filesToPull, file)
 		}
 	}
 
-	return filesToPull
+	filesToPullClean := make([]string, count)
+
+	for i := 0; i < count; i++ {
+		filesToPullClean[i] = filesToPull[i]
+	}
+
+	print(strings.Join(filesToPullClean, " "))
+
+	return filesToPullClean
 }
 
 func IsWindows() bool {
