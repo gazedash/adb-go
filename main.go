@@ -113,7 +113,7 @@ func Pull(v string, d string, wg *sync.WaitGroup) {
 }
 
 func GetAllFiles() []string {
-	ls := exec.Command("adb", "shell", "find /sdcard/DCIM/Camera/ -type f")
+	ls := exec.Command("adb", "shell", "find /sdcard/ -type f")
 
 	stdout, _ := ls.Output()
 
@@ -192,7 +192,7 @@ func GetFilesToPull() []string {
 	// Dirs to be ignored when pulling
 	pullignoreData, err := os.ReadFile(".pullignore")
 
-	if (err != nil) {
+	if err != nil {
 		file, _ := os.Create(".pullignore")
 		file.Write([]byte("/sdcard/Android\nArt"))
 	}
@@ -218,7 +218,7 @@ func GetFilesToPull() []string {
 			}
 		}
 
-		if (ignored == false) {
+		if ignored == false {
 			filesToPull = append(filesToPull, file)
 		}
 	}
