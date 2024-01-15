@@ -244,8 +244,8 @@ func GetFilesToPull() []string {
 		}
 
 		if ignored == false {
+			filesToPull[count] = file
 			count++
-			filesToPull = append(filesToPull, file)
 		}
 	}
 
@@ -254,8 +254,6 @@ func GetFilesToPull() []string {
 	for i := 0; i < count; i++ {
 		filesToPullClean[i] = filesToPull[i]
 	}
-
-	print(strings.Join(filesToPullClean, " "))
 
 	return filesToPullClean
 }
