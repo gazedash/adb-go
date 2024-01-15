@@ -2,16 +2,19 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
-	_ "embed"
+
 	"golang.org/x/net/websocket"
 )
 
@@ -86,22 +89,61 @@ func GetConfig() Config {
 	return cfg
 }
 
-func PullFiles(foldersToPull []string, dst string) {
-	for _, v := range foldersToPull {
-		if v == "" {
-			continue
-		}
+func Pull(v string, d string, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-		pull := exec.Command("adb", "pull", v, dst)
-
-		// print command with src and dst paths
-		print(pull.String())
-
-		stdout, _ := pull.Output()
-
-		// print result
-		print(string(stdout))
+	if v == "" {
+		return
 	}
+
+	if v == "." {
+		return
+	}
+
+	dstPath := d + filepath.FromSlash(v)
+	i := strings.LastIndex(dstPath, filepath.FromSlash(target.separator))
+	dstPath = dstPath[:i]
+
+	MkdirP(dstPath, IsWindows())
+
+	// fmt.Println(v)
+	// fmt.Println(dstPath)
+
+	a := exec.Command("adb", "pull", v, dstPath)
+
+	b, _ := a.Output()
+	fmt.Println(string(b))
+}
+
+func GetAllFiles() []string {
+	ls := exec.Command("adb", "shell", "find /sdcard/DCIM/Camera/ -type f")
+
+	stdout, _ := ls.Output()
+
+	files := SplitByNewLine(stdout)
+
+	return files
+}
+
+func PullFiles(files []string, dst string) {
+	start := time.Now()
+
+	MkdirP(dst, IsWindows())
+
+	var wg sync.WaitGroup
+
+	for _, v := range files {
+		wg.Add(1)
+
+		go Pull(v, dst, &wg)
+	}
+
+	wg.Wait()
+
+	t := time.Now()
+	elapsed := t.Sub(start)
+
+	fmt.Println(elapsed)
 
 	print("pull finished")
 }
@@ -149,34 +191,42 @@ func (t *Target) allFilesGlob() string {
 	return t.getDir("*")
 }
 
-func GetFoldersToPull() []string {
+func GetFilesToPull() []string {
 	// Dirs to be ignored when pulling
 	pullignoreData, err := os.ReadFile(".pullignore")
 
 	if (err != nil) {
 		file, _ := os.Create(".pullignore")
-		file.Write([]byte("/sdcard/Aboba\nArt"))
+		file.Write([]byte("/sdcard/Android\nArt"))
 	}
 
 	pullignoreData, _ = os.ReadFile(".pullignore")
 
-	pullignore := strings.ReplaceAll(string(NormalizeNewlines(pullignoreData)), newline, " ")
+	pullignore := strings.Split(string(NormalizeNewlines(pullignoreData)), newline)
 
-	ls := exec.Command("adb", "shell", "ls", "-d", target.allFilesGlob())
+	print("Ignored dirs:")
+	print(strings.Join(pullignore, " "))
 
-	stdout, _ := ls.Output()
-
-	folders := SplitByNewLine(stdout)
+	files := GetAllFiles()
 	// exclude ignored folders
-	foldersToPull := make([]string, len(folders))
-	for _, v := range folders {
-		folder := strings.Trim(v, " ")
-		if strings.Contains(pullignore, folder) == false {
-			foldersToPull = append(foldersToPull, folder)
+	filesToPull := make([]string, len(files))
+	for _, v := range filesToPull {
+		file := strings.Trim(v, " ")
+
+		ignored := false
+
+		for _, ignoredFile := range pullignore {
+			if strings.HasPrefix(file, ignoredFile) == true {
+				ignored = true
+			}
+		}
+
+		if (ignored == false) {
+			filesToPull = append(filesToPull, file)
 		}
 	}
 
-	return foldersToPull
+	return filesToPull
 }
 
 func IsWindows() bool {
@@ -187,15 +237,6 @@ func IsWindows() bool {
 	return isWindows
 }
 
-func PreparePull(foldersToPull []string, dst string) {
-	print("Pulling these dirs: " + strings.Trim(strings.Join(foldersToPull, " "), " "))
-	print("To...................")
-	print(dst)
-	print("Pulling.....................")
-
-	MkdirP(dst, IsWindows())
-}
-
 func GetDestination(cfg Config) string {
 	// Destination is a path from config + device_id folder
 	return cfg.dst + GetDeviceId()
@@ -203,9 +244,8 @@ func GetDestination(cfg Config) string {
 
 func pull(cfg Config) {
 	dst := GetDestination(cfg)
-	foldersToPull := GetFoldersToPull()
-	PreparePull(foldersToPull, dst)
-	PullFiles(foldersToPull, dst)
+	files := GetFilesToPull()
+	PullFiles(files, dst)
 }
 
 var pushDirName = "Push"
@@ -257,10 +297,6 @@ func PushFiles(cfg Config) {
 		date := fmt.Sprintf("%d-%02d-%02dT%02d_%02d_%02d",
 			t.Year(), t.Month(), t.Day(),
 			t.Hour(), t.Minute(), t.Second())
-
-		// fmt.Println(date)
-		// fmt.Println(dirPath)
-		// fmt.Println(dirPath + date)
 
 		err := os.Rename(dirPath, dirPath+"_"+date)
 
@@ -340,7 +376,7 @@ var html []byte
 func serveHtml(mux *http.ServeMux) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		bytes, err := os.ReadFile("./index.html")
-		
+
 		if err != nil {
 			w.Write(html)
 		}
