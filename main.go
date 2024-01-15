@@ -119,6 +119,14 @@ func GetAllFiles() []string {
 
 	files := SplitByNewLine(stdout)
 
+	ls = exec.Command("adb", "shell", "find /sdcard/ -type d -empty")
+
+	stdout, _ = ls.Output()
+
+	dirs := SplitByNewLine(stdout)
+
+	files = append(files, dirs[:]...)
+
 	return files
 }
 
