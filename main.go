@@ -106,13 +106,10 @@ func Pull(v string, d string, wg *sync.WaitGroup) {
 
 	MkdirP(dstPath, IsWindows())
 
-	// fmt.Println(v)
-	// fmt.Println(dstPath)
-
 	a := exec.Command("adb", "pull", v, dstPath)
 
 	b, _ := a.Output()
-	fmt.Println(string(b))
+	print(string(b))
 }
 
 func GetAllFiles() []string {
@@ -143,7 +140,7 @@ func PullFiles(files []string, dst string) {
 	t := time.Now()
 	elapsed := t.Sub(start)
 
-	fmt.Println(elapsed)
+	print(fmt.Sprint(elapsed))
 
 	print("pull finished")
 }
