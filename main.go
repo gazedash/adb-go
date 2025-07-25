@@ -137,6 +137,9 @@ func PullFiles(files []string, dst string) {
 
 	var wg sync.WaitGroup
 
+	maxGoroutines := 10 // set your desired max goroutine count
+	sem := make(chan struct{}, maxGoroutines)
+
 	for _, v := range files {
 		if v == "" {
 			continue
@@ -145,8 +148,12 @@ func PullFiles(files []string, dst string) {
 			continue
 		}
 		wg.Add(1)
+		sem <- struct{}{} // acquire a slot
 
-		go Pull(v, dst, &wg)
+		go func(file string) {
+			defer func() { <-sem }() // release the slot
+			Pull(file, dst, &wg)
+		}(v)
 	}
 
 	wg.Wait()
